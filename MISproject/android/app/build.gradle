@@ -194,6 +194,11 @@ dependencies {
 
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
 
+    compile project(':react-native-audio')
+    compile project(':react-native-ssh-sftp')
+    implementation project(':react-native-fs')
+    implementation project(':react-native-restart')
+
     debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}") {
       exclude group:'com.facebook.fbjni'
     }

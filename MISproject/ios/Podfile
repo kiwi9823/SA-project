@@ -87,6 +87,10 @@ target 'MISproject' do
 
   pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
 
+  pod 'RNFS', :path => '../node_modules/react-native-fs'
+
+  pod 'RNSound', :path => '../node_modules/react-native-sound'
+
   target 'MISprojectTests' do
     inherit! :complete
     # Pods for testing
