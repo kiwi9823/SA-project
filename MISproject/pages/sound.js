@@ -1,16 +1,15 @@
 import React, { Component } from 'react';
-
-import { StyleSheet, Text, View, Button, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity ,BackHandler} from 'react-native';
 import { Header, Slider } from 'react-native-elements'
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 import Sound from 'react-native-sound'
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import WordFile from './wordfile';
+import WordFile,{helper} from './wordfile';
 
 let whoosh;
 
-
+// helper("sdfsd");
 export default class App extends Component {
 
 
@@ -26,7 +25,8 @@ export default class App extends Component {
             nowSec: 0, //目前秒鐘
             maximumValue: 0, //滑輪直
             play: false,
-            pause: false
+            pause: false,
+            resume: false
         }
 
     }
@@ -54,6 +54,24 @@ export default class App extends Component {
             })
 
         })
+        
+        backAction = async () => {
+            this.props.navigation.navigate('歷史紀錄');
+            this.setState({
+                play:false,
+                pause: false,
+                resume: false,
+                nowMin: 0,
+                nowSec: 0,
+                seconds: 0
+            })
+            clearInterval(this.time);
+           
+            console.log("pause"+this.state.resume)
+            whoosh.pause();
+           
+        };
+        BackHandler.addEventListener("hardwareBackPress", backAction);
 
     }
     componentWillUnmount() {
@@ -64,42 +82,49 @@ export default class App extends Component {
     _play = () => {
         this.setState({ pause: false, play: true })
 
-
-        let url = this.props.route.params.url;
-        whoosh = new Sound(url, '', (err) => {
-
-            let totalTime = whoosh.getDuration();
-            //let totalTime = time + 1;
-            console.log("時間" + totalTime);
-            totalTime = Math.ceil(totalTime);
-            let totalMin = parseInt(totalTime / 60); //总分钟数
-            let totalSec = totalTime - totalMin * 60; //秒钟数并判断前缀是否 + '0'
-            totalSec = totalSec > 9 ? totalSec : '0' + totalSec;
-            this.setState({
-
-                totalMin,
-                totalSec,
-                maximumValue: totalTime,
-            })
-
-            if (err) {
-                return console.log(+err)
-            }
-           
-
-            whoosh.play(success => {
-
-                if (success) {
-                    console.log('success - 播放成功')
-                    this._stop();
-                } else {
-                    console.log('fail - 播放失败')
+        if(this.state.resume==false){
+            let url = this.props.route.params.url;
+            whoosh = new Sound(url, '', (err) => {
+    
+                let totalTime = whoosh.getDuration();
+                //let totalTime = time + 1;
+                console.log("時間" + totalTime);
+                totalTime = Math.ceil(totalTime);
+                let totalMin = parseInt(totalTime / 60); //总分钟数
+                let totalSec = totalTime - totalMin * 60; //秒钟数并判断前缀是否 + '0'
+                totalSec = totalSec > 9 ? totalSec : '0' + totalSec;
+                this.setState({
+    
+                    totalMin,
+                    totalSec,
+                    maximumValue: totalTime,
+                })
+    
+                if (err) {
+                    return console.log(+err)
                 }
-            })
-
-        });
-
-        console.log("play" + url);
+               
+    
+                whoosh.play(success => {
+    
+                    if (success) {
+                        console.log('success - 播放成功')
+                        this._stop();
+                    } else {
+                        console.log('fail - 播放失败')
+                    }
+                })
+    
+            });
+    
+            console.log("play" + url);
+        }else{
+            whoosh.play();
+            console.log("resume")
+            this.setState({resume:false,pause: false, play: true})
+            console.log("play"+this.state.resume)
+        }
+       
 
         this.time = setInterval(() => {
             whoosh.getCurrentTime(seconds => {
@@ -107,10 +132,10 @@ export default class App extends Component {
                 this._getNowTime(seconds)
             })
         }, 1000)
-        if (this.state.pause) {
-            whoosh.pause();
-            console.log("pasue");
-        }
+        // if (this.state.pause) {
+        //     whoosh.pause();
+        //     console.log("pasue");
+        // }
 
     }
     // 暂停
@@ -118,7 +143,8 @@ export default class App extends Component {
 
       
         clearInterval(this.time);
-        this.setState({ pause: true, play: false })
+        this.setState({ pause: true, play: false,resume:true })
+        console.log("pause"+this.state.resume)
         whoosh.pause();
     }
 

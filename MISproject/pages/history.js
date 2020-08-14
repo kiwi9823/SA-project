@@ -1,5 +1,4 @@
 import React, { Component, useEffect } from 'react';
-// import { Provider as PaperProvider } from 'react-native-paper';
 import { StyleSheet, Text, View, Button, TouchableOpacity, Alert, ScrollView, RefreshControl, BackHandler } from 'react-native';
 //import Icon from 'react-native-vector-icons/FontAwesome';
 import { ListItem, Header, Icon } from 'react-native-elements'
@@ -8,85 +7,39 @@ import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { AudioUtils } from 'react-native-audio';
 // import { ScrollView } from 'react-native-gesture-handler';
 
-import SSHClient from 'react-native-ssh-sftp';
-
-// const wait = (timeout) => {
-//     return new Promise(resolve => {
-//         setTimeout(resolve, timeout);
-//     });
-// }
-
-// let client = new SSHClient('140.115.81.243', 22, 'client', 'qwerty', (error) => {
-//     if (error)
-//         console.warn(error);
-//     else {
-//         console.log("ok");
-//     }
-// });
-// try {
-//     client.connectSFTP();
-// } catch (err) {
-//     console.log(err)
-// }
+import Upload from 'react-native-background-upload'
 
 
-// ReadDir();
 
-
-// backAction = async () => {
-
-//   };
-// useEffect(() => {
-//     BackHandler.addEventListener("hardwareBackPress",backAction);
-//     return () => {
-//         BackHandler.removeEventListener("hardwareBackPress",backAction);
-//     };
-// }, [])
-
-// const backHandler = BackHandler.addEventListener(
-//     "hardwareBackPress",
-//     backAction
-// );
-
+const wait = (timeout) => {
+    return new Promise(resolve => {
+        setTimeout(resolve, timeout);
+    });
+}
 
 
 
 export default class history extends Component {
 
-
-
-
-    // a =this.props.route.params.reload;
-    // console.log()
-
-
     state = {
         response: [],
+        refreshing: false,
 
     }
-    //    componentWillMount() {
+    _onRefresh = () => {
+        this.setState({ refreshing: true });
+        this.ReadDir().then(() => {
+            this.setState({ refreshing: false });
+        });
+    }
 
-    //     } 
-    // componentWillUnmount() {
-    //     BackHandler.removeEventListener("hardwareBackPress",backAction);
-    // }
 
 
     componentDidMount() {
-      
+
 
         backAction = async () => {
             this.props.navigation.navigate('歷史紀錄');
-            
-            // Alert.alert("警告", "確定要離開這個可愛的APP嗎?", [
-            //     {
-            //         text: "Cancel",
-            //         onPress: () => null,
-            //         style: "cancel"
-            //     },
-            //     { text: "YES", onPress: () => BackHandler.exitApp() }
-            // ]);
-            // return true;
         };
         BackHandler.addEventListener("hardwareBackPress", backAction);
         this.ReadDir();
@@ -98,7 +51,7 @@ export default class history extends Component {
         await RNFS.readDir(AudioUtils.DocumentDirectoryPath)
             .then((result) => {
 
-                var reg = new RegExp("^.*aac.*$");
+                var reg = new RegExp("^.*awb.*$");
 
                 let output = [];
 
@@ -109,7 +62,7 @@ export default class history extends Component {
 
                         if (reg.test(result[i].name)) {
                             console.log(result[i].name);
-                            console.log(result[i].path);
+                            // console.log(result[i].path);
                             let obj = { 'name': result[i].name, 'path': result[i].path };
 
                             output.push(obj);
@@ -147,26 +100,97 @@ export default class history extends Component {
         return res;
     }
 
+
+    //沒有CONTENT TYPE
+    _upload(datas, filename) {
+
+
+        //let filename = this.filenames;
+        
+        let name = "testClient"
+        let formData = new FormData();
+        // let filename = datas;
+        formData.append('userName', name)
+        // formdata.append('userName',name)
+        formData.append('file', { uri: `file://${datas}`, name: filename, type: 'multipart/form-data' })
+        //之後要抓使用者名稱
+
+        fetch(`http://140.115.81.199:9943/audioUpload/${name}`,
+            {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'multipart/form-data'
+                },
+                body: formData
+            })
+            .then(response => {
+                console.log(response.status);
+            })
+            .then(result => {
+                console.log("success", result)
+                fetch(`http://140.115.81.199:9943/bucketUpload/${name}/${filename}`,
+                    {
+                        method: 'POST',
+                        // headers: {
+                        //     Accept: 'application/json',
+                        //     'Content-Type': 'multipart/form-data'
+                        // },
+                        // body: formData
+                    })
+                    .then(response => {
+                        console.log(response.status);
+                    })
+                    .then(result => {
+                        console.log("success", result)
+                        fetch(`http://140.115.81.199:9943/textDown/${name}/${filename}`,
+                            {
+                                method: 'POST',
+                                // headers: {
+                                //     Accept: 'application/json',
+                                //     'Content-Type': 'multipart/form-data'
+                                // },
+                                // body: formData
+                            })
+                            .then(response => {
+                                console.log(response.status);
+                            })
+                            .then(result => {
+                                console.log("success", result)
+                                fetch(`http://140.115.81.199:9943/snowDown/${name}/${filename}`,
+                                    {
+                                        method: 'POST',
+                                    })
+                                    .then(response => {
+                                        console.log(response.status);
+                                    })
+                                    .then(result => {
+                                        console.log("success", result)
+                                    })
+                                    .catch(error => {
+                                        console.log("error", error)
+                                    })
+                            })
+                            .catch(error => {
+                                console.log("error", error)
+                            })
+                    })
+                    .catch(error => {
+                        console.log("error", error)
+                    })
+            })
+            .catch(error => {
+                console.log("error", error)
+            })
+    }
+
+
     render() {
         let { response } = this.state;
         const { navigation } = this.props;
-        // var refresh_h = this.props.route.params.reload;
-        // const [refreshing, setRefreshing] = React.useState(false);
-
-        // const onRefresh = React.useCallback(() => {
-        //     setRefreshing(true);
-
-        //     wait(2000).then(() => setRefreshing(false));
-        // }, []);
-
-
-
-
-
-
 
         return (
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1 }} >
 
                 {/* Header&Body */}
                 < View style={{ flex: 7, backgroundColor: 'white' }}>
@@ -191,21 +215,26 @@ export default class history extends Component {
                         }}
                     // rightComponent={{ icon: 'mic', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
                     />
-                    {/* <ScrollView refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                    }  > */}
-                    <ScrollView>
-                        <View>
+                    < ScrollView refreshControl={
+                        < RefreshControl
+                            refreshing={this.state.refreshing}
+                            onRefresh={this._onRefresh}
+                        />}>
+                        {/* <ScrollView> */}
+                        < View >
                             {
                                 response.map((l, i) => (
                                     <ListItem
                                         key={i}
-                                        // play-circle-filled
                                         leftIcon={{ name: 'mic' }}
                                         title={l.name}
                                         subtitle={l.subtitle}
                                         bottomDivider
-                                        rightIcon={{ name: 'delete' }}
+                                        rightIcon={{
+                                            name: 'cloud-upload-outline',
+                                            type: 'ionicon',
+                                            onPress: () => this._upload(l.path, "pythontest")
+                                        }}
                                         onPress={() => navigation.navigate('播放', { url: l.path, time: 5, name: l.name })}
                                         onLongPress={() => {
 
@@ -224,22 +253,22 @@ export default class history extends Component {
                                             );
                                         }}
                                     />
-                                    // this.state.currentTime
                                 ))
                             }
-                            <Button title="read"
-                                onPress={() => this.ReadDir()} />
+                            {/* <Button title="read"
+                        onPress={() => this.ReadDir()} /> */}
 
-                        </View>
-                    </ScrollView>
+                        </View >
+                    </ScrollView >
 
                 </View >
 
                 {/* Footer */}
-                < View style={{ flex: 1, backgroundColor: '#E8E8E8' }}>
+                < View style={{ flex: 1, backgroundColor: '#E8E8E8' }
+                }>
                     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                         <Icon raised name='controller-record' type='entypo' color='red'
-                            onPress={() => navigation.navigate('錄音')}
+                            onPress={() => navigation.navigate('錄音', { record: 0 })}
                         />
                     </View>
                 </View >

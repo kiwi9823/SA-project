@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-
 import { View, Text, Button, ScrollView, TouchableOpacity } from 'react-native';
 import { SearchBar, Header, Icon } from 'react-native-elements';
 import { NavigationContainer, DrawerActions } from '@react-navigation/native';
@@ -18,13 +17,9 @@ import Sound from 'react-native-sound';
 
 import recordpage from './pages/record';
 import soundpage from './pages/sound';
-import wordpage from './pages/wordfile';
+ import wordpage from './pages/wordfile';
 import historypage from './pages/history';
 import initialpage from './pages/initial';
-
-import { color } from 'react-native-reanimated';
-
-
 
 function Mainpage({ navigation }) {
   return (

@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-
 import { View, Text, StyleSheet, Button, TouchableOpacity, RefreshControl } from 'react-native';
 //import Icon from 'react-native-vector-icons/FontAwesome';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
@@ -35,7 +34,7 @@ export default class App extends Component {
             //audioPath: AudioUtils.DocumentDirectoryPath + 'test.aac',  // 文件路径
             //現在他上傳的時間 使用者名稱
             //要尊守規定
-            audioPath: AudioUtils.DocumentDirectoryPath + `/name-${year + month + day + hour + minute + second}.aac`,  // 文件路径
+            audioPath: AudioUtils.DocumentDirectoryPath+`/name-${year + month + day + hour + minute + second}.awb`,  // 文件路径
             recording: false, //是否录音
             pause: false, //录音是否暂停
             stop: false, //录音是否停止
@@ -82,14 +81,14 @@ export default class App extends Component {
      */
     prepareRecordingPath = (path) => {
         const option = {
-            SampleRate: 44100.0, //采样率
-            Channels: 2, //通道
+            SampleRate: 16000, //采样率
+            Channels: 1, //通道
             AudioQuality: 'High', //音质
-            AudioEncoding: 'aac', //音频编码
-            OutputFormat: 'mpeg_4', //输出格式
+            AudioEncoding: 'amr_wb', //音频编码
+            OutputFormat: 'amr_wb', //输出格式
             MeteringEnabled: false, //是否计量
             MeasurementMode: false, //测量模式
-            AudioEncodingBitRate: 32000, //音频编码比特率
+            AudioEncodingBitRate: 16000, //音频编码比特率
             IncludeBase64: true, //是否是base64格式
             AudioSource: 0, //音频源
         }
@@ -161,7 +160,7 @@ export default class App extends Component {
 
         this.setState({
 
-            audioPath: AudioUtils.DocumentDirectoryPath + `/name-${year + month + day + hour + minute + second}.aac`,  // 文件路径
+            audioPath: AudioUtils.DocumentDirectoryPath + `/name-${year + month + day + hour + minute + second}.awb`,  // 文件路径
             currentTime: 0, //录音时长
         })
 
@@ -176,9 +175,10 @@ export default class App extends Component {
             return alert('未錄音')
         }
         try {
-            this.forceRemount();
+            
 
             await AudioRecorder.stopRecording();
+            this.forceRemount();
             //this.refunction();
 
 
@@ -194,59 +194,65 @@ export default class App extends Component {
     }
 
 
-    UploadRequest(url, datas) {
-        let BaseUrl = 'http://www.baidu.com'  // 域名地址，根据自己的修改
+    // UploadRequest(url, datas) {
+    //     let BaseUrl = 'http://www.baidu.com'  // 域名地址，根据自己的修改
 
-        const params = {
-            method: 'POST',
-            body: datas,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            },
-            timeout: 5000 // 5s超时
-        };
+    //     const params = {
+    //         method: 'POST',
+    //         body: datas,
+    //         headers: {
+    //             'Content-Type': 'multipart/form-data'
+    //         },
+    //         timeout: 5000 // 5s超时
+    //     };
 
-        return fetch(`${BaseUrl}${url}`, params)
-            .then(response => response.json())
-            .then(data => data)
-            .catch(error => {
-                return { error_code: -3, error_msg: '请求异常，请重试' }
-            })
+    //     return fetch(`${BaseUrl}${url}`, params)
+    //         .then(response => response.json())
+    //         .then(data => data)
+    //         .catch(error => {
+    //             return { error_code: -3, error_msg: '请求异常，请重试' }
+    //         })
 
-    }
+    // }
 
-    requestAudio = async (params) => {
-        let { path } = params
-        let formData = new FormData()
-        let soundPath = `file://${path}`  // 注意需要增加前缀 `file://`
-        let fileName = path.substring(path.lastIndexOf('/') + 1, path.length) // 文件名
-        let file = { uri: soundPath, type: "multipart/form-data", name: fileName } // 注意 `uri` 表示文件地址，`type` 表示接口接收的类型，一般为这个，跟后端确认一下
-        formData.append('file', file)
-        return await UploadRequest('自己的接口地址', formData) // `UploadRequest` 上传也是封装过，具体参考下面
-    }
+    // requestAudio = async (params) => {
+    //     let { path } = params
+    //     let formData = new FormData()
+    //     let soundPath = `file://${path}`  // 注意需要增加前缀 `file://`
+    //     let fileName = path.substring(path.lastIndexOf('/') + 1, path.length) // 文件名
+    //     let file = { uri: soundPath, type: "multipart/form-data", name: fileName } // 注意 `uri` 表示文件地址，`type` 表示接口接收的类型，一般为这个，跟后端确认一下
+    //     formData.append('file', file)
+    //     return await UploadRequest('自己的接口地址', formData) // `UploadRequest` 上传也是封装过，具体参考下面
+    // }
 
 
-    _upload = async () => {
-        let { stop, audioPath } = this.state
-        //let { stop, audioPath } = this.state
-        if (stop) {
-            // 有录音
-            let params = {
-                path: this.state.audioPath
-            }
+    // _upload = async () => {
+    //     let { stop, audioPath } = this.state
+    //     //let { stop, audioPath } = this.state
+    //     if (stop) {
+    //         // 有录音
+    //         let params = {
+    //             path: this.state.audioPath
+    //         }
 
-            let audioResult = await requestAudio(params);
+    //         let audioResult = await requestAudio(params);
 
-            console.log('audioResult----请求接口后返回的数据：', audioResult)
-        }
+    //         console.log('audioResult----请求接口后返回的数据：', audioResult)
+    //     }
 
-    }
+    // }
 
 
 
     render() {
         let { recording, pause, resume, stop, currentTime } = this.state;
         const { navigation } = this.props;
+        
+        // if( this.props.route.params.record==0){
+            
+        //     this._record;
+        //     console.log(this.props.route.params.record)
+        // }
 
         return (
 
