@@ -193,57 +193,6 @@ export default class App extends Component {
 
     }
 
-
-    // UploadRequest(url, datas) {
-    //     let BaseUrl = 'http://www.baidu.com'  // 域名地址，根据自己的修改
-
-    //     const params = {
-    //         method: 'POST',
-    //         body: datas,
-    //         headers: {
-    //             'Content-Type': 'multipart/form-data'
-    //         },
-    //         timeout: 5000 // 5s超时
-    //     };
-
-    //     return fetch(`${BaseUrl}${url}`, params)
-    //         .then(response => response.json())
-    //         .then(data => data)
-    //         .catch(error => {
-    //             return { error_code: -3, error_msg: '请求异常，请重试' }
-    //         })
-
-    // }
-
-    // requestAudio = async (params) => {
-    //     let { path } = params
-    //     let formData = new FormData()
-    //     let soundPath = `file://${path}`  // 注意需要增加前缀 `file://`
-    //     let fileName = path.substring(path.lastIndexOf('/') + 1, path.length) // 文件名
-    //     let file = { uri: soundPath, type: "multipart/form-data", name: fileName } // 注意 `uri` 表示文件地址，`type` 表示接口接收的类型，一般为这个，跟后端确认一下
-    //     formData.append('file', file)
-    //     return await UploadRequest('自己的接口地址', formData) // `UploadRequest` 上传也是封装过，具体参考下面
-    // }
-
-
-    // _upload = async () => {
-    //     let { stop, audioPath } = this.state
-    //     //let { stop, audioPath } = this.state
-    //     if (stop) {
-    //         // 有录音
-    //         let params = {
-    //             path: this.state.audioPath
-    //         }
-
-    //         let audioResult = await requestAudio(params);
-
-    //         console.log('audioResult----请求接口后返回的数据：', audioResult)
-    //     }
-
-    // }
-
-
-
     render() {
         let { recording, pause, resume, stop, currentTime } = this.state;
         const { navigation } = this.props;

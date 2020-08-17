@@ -185,6 +185,7 @@ export default class App extends Component {
             <View style={{ flex: 1 }} >
 
                 <Header
+                    placement="left"
                     backgroundColor='transparent'
                     containerStyle={{ width: '100%', backgroundColor: '#3488C0', borderBottomWidth: 0 }}
                     leftComponent={{
@@ -201,7 +202,7 @@ export default class App extends Component {
                             color: 'white'
                         }
                     }}
-                    rightComponent={{ icon: 'export', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
+                    // rightComponent={{ icon: 'export', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
                 />
                 <View style={{ flex: 1, backgroundColor: 'white', flexDirection: 'column', justifyContent: 'space-around' }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>

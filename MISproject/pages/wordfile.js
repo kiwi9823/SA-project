@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 
-import { Text, View, FlatList, ActivityIndicator, SafeAreaView } from 'react-native';
+import { Text, View, FlatList, ActivityIndicator, SafeAreaView, ScrollView, RefreshControl, PermissionsAndroid,Alert} from 'react-native';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { Icon, Header } from 'react-native-elements';
-
+import { FAB, Portal, Provider } from 'react-native-paper';
 // import App from './sound';
 // import {DrawerActions, useNavigation, NavigationContainer} from '@react-navigation/native';
-
+import RNFS from 'react-native-fs';
 
 //方法1
 export default class WordFile extends Component {
@@ -15,14 +15,15 @@ export default class WordFile extends Component {
 
     this.state = {
       summ: [],
+      summ_data:[],
       trans: [],
-      isLoading: true
+      isLoading: true,
+      hasPermission: undefined
     };
   }
 
+
   async componentDidMount() {
-
-
     // let formData = new FormData();
     // // let filename = datas;
     // formData.append('userName', 'testClient');
@@ -41,69 +42,207 @@ export default class WordFile extends Component {
     //   const json = await response.json();
     // this.setState({ summ: json.summary, trans: json.transcript, isLoading: false });
 
-    const response = await fetch('https://gist.githubusercontent.com/kiwi9823/cb99d49e9c8674d40a2378f1546a88bd/raw/705da9f5a00cf6fa6c13b2073a3a97bfe58d8703/text.json');
+    const response = await fetch('https://gist.githubusercontent.com/kiwi9823/2cf7242d8f10b04e77aa72acd246462e/raw/c9349c048340d82777f885cbeda8b9f1f1794907/test.json');
     const json = await response.json();
-    this.setState({ summ: json.summary, trans: json.transcript, isLoading:false });
-   
-    // console.log('this.state.trans');
-    // console.log(this.state.trans);
+    //Transcript
+    const transSTR = JSON.stringify(json.transcript);
+    const transData = transSTR.slice(1,-1); // console.log(transData.slice(1,-1));
+    //Summary
+    const summSTR = JSON.stringify(json.transcript);
+    const summData = summSTR.slice(1,-1); // console.log(transData.slice(1,-1));
+    this.setState({ summ: json.summary, summ_data: summData,trans: transData, isLoading:false });
   }
 
-  // helper(please) {
-  //   console.log(please);
-  // }
+  EditText = () => {
+      console.log('Pressed edit')
+  }
 
+  trans_download = () => {
+      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE)
+      
+      // create a path you want to write to
+      // :warning: on iOS, you cannot write into `RNFS.MainBundlePath`,
+      // but `RNFS.DocumentDirectoryPath` exists on both platforms and is writable
+      var path = RNFS.DownloadDirectoryPath + '/transcript.txt';
+      console.log(path);
+      // write the file
+      RNFS.writeFile(path, this.state.trans, 'utf8')
+        .then((success) => {
+          Alert.alert(
+            "Download File",
+            "Success!",
+            [
+              // {
+              //   text: "Cancel",
+              //   onPress: () => console.log("Cancel Pressed"),
+              //   style: "cancel"
+              // },
+              { text: "OK", onPress: () => console.log("OK Pressed") }
+            ],
+            { cancelable: false }
+          );
+          console.log('FILE WRITTEN!');
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+  }
   Transcript = () => {
-    // const { isLoading } = this.state;
-    // const { trans, isLoading } = this.state;
-
-    // console.log('TRANS');
-    // console.log(this.state.trans);
-    // let summ = this.state ;
+    const [state, setState] = React.useState({ open: false });
+    const onStateChange = ({ open }) => setState({ open });
+    const { open } = state;
 
     return (
-      <SafeAreaView style={{ flex: 1, padding: 15 }}>
+      <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
+              <View>
+                <Text style={{ fontSize: 15 }}>{this.state.trans}{"\n"}</Text>
+              </View>
+         
+          <Provider>
+              <Portal>
+                  <FAB.Group
+                      open={open}
+                      icon={open ? 'close' : 'plus'}
+                      fabStyle={{backgroundColor:"rgba(231,76,60,1)"}}
+             
+                      actions={[
+                        // { icon: 'plus', onPress: () => console.log('Pressed add') },
+                          {
+                            icon: 'format-title',
+                            label: 'Edit Text',
+                            onPress: () => this.EditText(),
+                          },
+                          // {
+                          //   icon: 'format-color-highlight',
+                          //   label: 'Highlight',
+                          //   onPress: () => console.log('Pressed Hightlight'),
+                          // },
+                          {
+                            icon: 'content-save-edit',
+                            label: 'Save Edit',
+                            onPress: () => console.log('Pressed save edit'),
+                          },
+                          {
+                            icon: 'download',
+                            label: 'Download',
+                            onPress: () => this.trans_download(),
+                          },
+                      ]}
 
-        <FlatList
-          data={this.state.trans}
-          extraData={this.state}
-          keyExtractor={({ id }, index) => id}
-          renderItem={({ item }) => (
-            <View>
-              <Text style={{ fontSize: 15 }}>{item.text}{"\n"}</Text>
-            </View>
-          )}
-        />
-
+                      onStateChange={onStateChange}
+                      onPress={() => {
+                          if (open) {
+                            // do something if the speed dial is open
+                          }
+                      }}
+                  />
+              </Portal>
+          </Provider>
       </SafeAreaView>
     );
-
   }
 
+  summ_download = () => {
+    PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE)
+    
+    // create a path you want to write to
+    // :warning: on iOS, you cannot write into `RNFS.MainBundlePath`,
+    // but `RNFS.DocumentDirectoryPath` exists on both platforms and is writable
+    var path = RNFS.DownloadDirectoryPath + '/summary.txt';
+    console.log(path);
+    // write the file
+    RNFS.writeFile(path, this.state.summ_data, 'utf8')
+      .then((success) => {
+        Alert.alert(
+          "Download File",
+          "Success!",
+          [
+            // {
+            //   text: "Cancel",
+            //   onPress: () => console.log("Cancel Pressed"),
+            //   style: "cancel"
+            // },
+            { text: "OK", onPress: () => console.log("OK Pressed") }
+          ],
+          { cancelable: false }
+        );
+        console.log('FILE WRITTEN!');
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+  }
   Summary = () => {
-    // const { isLoading } = this.state;
-    // const { data } = this.state;
-    // let summ = this.state ;
-
-    // console.log('SUm');
-    // console.log(this.state.data);
+    const [state, setState] = React.useState({ open: false });
+    const onStateChange = ({ open }) => setState({ open });
+    const { open } = state;
 
     return (
-      <SafeAreaView style={{ flex: 1, padding: 15 }}>
-
-        <FlatList
-          data={this.state.summ}
-          extraData={this.state}
-          keyExtractor={({ id }, index) => id}
-          renderItem={({ item }) => (
-            <View>
-              <Text style={{ fontSize: 15 }}>{item.text}{"\n"}</Text>
-            </View>
-          )}
-        />
-
+      <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
+          <FlatList
+            data={this.state.summ}
+            extraData={this.state}
+            keyExtractor={({ id }, index) => id}
+            renderItem={({ item }) => (
+              <View>
+                <Text style={{ fontSize: 15 }}>{item.text}{"\n"}</Text>
+              </View>
+            )}
+          />
+          <Provider>
+              <Portal>
+                  <FAB.Group
+                      open={open}
+                      icon={open ? 'close' : 'plus'}
+                      fabStyle={{backgroundColor:"rgba(231,76,60,1)"}}
+                      
+                      actions={[
+                        // { icon: 'plus', onPress: () => console.log('Pressed add') },
+                          {
+                            icon: 'format-title',
+                            label: 'Edit Text',
+                            onPress: () => this.EditText(),
+                          },
+                          // {
+                          //   icon: 'format-color-highlight',
+                          //   label: 'Highlight',
+                          //   onPress: () => console.log('Pressed export'),
+                          // },
+                          {
+                            icon: 'content-save-edit',
+                            label: 'Save Edit',
+                            onPress: () => console.log('Pressed save edit'),
+                          },
+                          {
+                            icon: 'download',
+                            label: 'Download',
+                            onPress: () => this.summ_download(),
+                          },
+                      ]}          
+                      
+                      onStateChange={onStateChange}
+                      onPress={() => {
+                          if (open) {
+                            // do something if the speed dial is open
+                          }
+                      }}
+                  />
+              </Portal>
+          </Provider>
       </SafeAreaView>
     );
+  }
+
+  //refresh control
+  state = {
+    response: [],
+    refreshing: false,
+  }
+  _onRefresh = () => {
+    this.setState({ refreshing: true });
+    this.componentDidMount().then(() => {
+        this.setState({ refreshing: false });
+    });
   }
 
   render() {
@@ -115,7 +254,6 @@ export default class WordFile extends Component {
     if (!isLoading) {
 
       return (
-
         <Tab.Navigator barStyle={{ backgroundColor: '#3488C0' }}>
           <Tab.Screen
             name="逐字稿"
@@ -135,14 +273,25 @@ export default class WordFile extends Component {
               ),
             }}
           />
-        </Tab.Navigator>
+        </Tab.Navigator>    
       );
     }
     else {
-      return (<ActivityIndicator />);
+      return (
+        < ScrollView refreshControl={
+          < RefreshControl
+              refreshing={this.state.refreshing}
+              onRefresh={this._onRefresh}
+          />}
+        >
+          <ActivityIndicator/>
+        </ ScrollView>
+      );
     }
+    
   }
 }
+
 
 // //方法2
 // function Transcript () {
