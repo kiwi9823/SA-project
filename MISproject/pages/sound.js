@@ -38,11 +38,11 @@ export default class App extends React.Component {
             { key: 'summ', title: 'Summary', icon: 'text-short',color:'#296C99'},
           ],
           response: [],
+          numberOfsummary: '',
+          text:'',
         };
     }
         
-
-
     async componentDidMount() {
         //音檔位置
         let url = this.props.route.params.url;
@@ -331,7 +331,7 @@ export default class App extends React.Component {
           });
 
           const [modalVisible, setModalVisible] = React.useState(false);
-          const [value, onChangeText] = React.useState('');
+        //   const [value, onChangeText] = React.useState('');
 
         return (
             <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
@@ -391,7 +391,7 @@ export default class App extends React.Component {
                         />
                     </Portal>
                 </Provider>
-                <View style={styles.centeredView}>
+        <View style={styles.centeredView}>
             <Modal
               animationType="fade"
               transparent={true}
@@ -401,16 +401,19 @@ export default class App extends React.Component {
                 <View style={styles.modalView}>
                   <Text style={styles.modalText}>Place a Number</Text>
                         <TextInput
+                        keyboardType = 'numeric'
                         style={{ height: 40, width:130, backgroundColor:'lightgray', marginBottom:15, paddingHorizontal:10}}
-                        onChangeText={text => onChangeText(text)}
+                        onChangeText={(text)=> this.onChanged(text)}
                         placeholder="Ex: '10'"
-                        value={value}
+                        value={this.state.numberOfsummary}
+                        maxLength={100}  //setting limit of input
                         />
                   <TouchableHighlight
                     style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
                     onPress={() => {
                         setModalVisible(!modalVisible);
-                        this._onRefresh();
+                        this.getNumofSummary(this.state.numberOfsummary)
+                        // this._onRefresh();
                       }}
                   >
                     <Text style={styles.textStyle}>Hide Modal</Text>
@@ -418,10 +421,54 @@ export default class App extends React.Component {
                 </View>
               </View>
             </Modal>
-
-          </View>
+        </View>
             </SafeAreaView>
         );
+    }
+
+    onChanged(text){
+        let newText = '';
+        let numbers = '0123456789';
+    
+        for (var i=0; i < text.length; i++) {
+            if(numbers.indexOf(text[i]) > -1 ) {
+                newText = newText + text[i];
+            }
+            else {
+                // your call back function
+                alert("please enter numbers only");
+            }
+        }
+        this.setState({ numberOfsummary: newText });
+    }
+
+    getNumofSummary = (numberOfsummary) => {
+        
+        // //const { TextInputEmail }  = this.state ;
+        // //const { TextInputPassword }  = this.state ;
+        // let formData = new FormData();
+        // formData.append('Email', numberOfsummary);
+        // //formData.append('Password', TextInputPassword);
+        // //formData.append('Password', sha256);
+        // fetch(`http://140.115.81.199:9943/PassGet`,
+        // {
+        //    method: 'POST',
+        //    headers: {
+        //       'Accept': 'application/json',
+        //       'Content-Type': 'multipart/form-data',
+        //    },
+        //    body: formData
+        // })
+        // .then(response => {
+        //    console.log(response.status);
+        // })
+        // .then(result => {
+        //    console.log("success", result)
+        // })
+        // .catch(error => {
+        //    console.log("error", error)
+        // })
+        console.log(numberOfsummary);
     }
 
     EditText = () => {

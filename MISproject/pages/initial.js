@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native'
 import { Header } from 'react-native-elements';
 import { CheckBox } from 'react-native-elements'
@@ -7,30 +6,79 @@ import { Input, Icon } from 'react-native-elements';
 import { Button } from 'react-native-elements';
 import Overlay from 'react-native-modal-overlay';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { sha256 } from 'react-native-sha256';
 
 
 
 class Inputs extends Component {
-
-    state = {
+    constructor(props) {
+ 
+        super(props)
+     
+        this.state = {
+     
+          TextInputEmail: '',
+          TextInputPassword: '',
+          //inputText: '',
+          text: '',
+        }
+     
+    }
+    /*state = {
         email: '',
         password: '',
+        text: '',
     }
     handleEmail = (text) => {
         this.setState({ email: text })
     }
     handlePassword = (text) => {
         this.setState({ password: text })
+    }*/
+
+    convertSHA(){
+        //Encode SHA256 
+        sha256(this.state.TextInputPassword).then(hash => {
+          this.setState({ text:hash })
+        });
     }
 
-    handleIntro = (text) => {
-        this.setState({ intro: text })
-    }
-
-    register = (email, pass) => {
+    signin = (TextInputEmail, TextInputPassword ) => {
+        alert('email: ' + TextInputEmail + '\npassword: ' + TextInputPassword)
         const { navigation } = this.props;
-        alert('email: ' + email + '\npassword: ' + pass)
         navigation.navigate('歷史紀錄');
+        
+        //const { TextInputEmail }  = this.state ;
+        //const { TextInputPassword }  = this.state ;
+        let formData = new FormData();
+        formData.append('Email', TextInputEmail);
+        //formData.append('Password', TextInputPassword);
+        //formData.append('Password', sha256);
+        fetch(`http://140.115.81.199:9943/PassGet`,
+        {
+           method: 'POST',
+           headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'multipart/form-data',
+           },
+           body: formData
+        })
+        .then(response => {
+           console.log(response.status);
+        })
+        .then(result => {
+           console.log("success", result)
+        })
+        .catch(error => {
+           console.log("error", error)
+        })
+        
+
+    }
+
+    regis = () => {
+        const { navigation } = this.props;
+        navigation.navigate('註冊頁面');
     }
 
     state = {
@@ -62,9 +110,9 @@ class Inputs extends Component {
                     // }}
 
                     centerComponent={{
-                        text: '註冊頁面',
+                        text: '登入',
                         style: {
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: 'bold',
                             fontFamily: 'Fonts.Lato',
                             color: 'white'
@@ -82,7 +130,7 @@ class Inputs extends Component {
                     autoCapitalize="none"
                     keyboardType="email-address"
                     returnKeyType="next"
-                    onChangeText={this.handleEmail}
+                    //onChangeText={this.handleEmail}
                     leftIcon={
                         <Icon
                             name='email'
@@ -91,6 +139,8 @@ class Inputs extends Component {
                     }
                     errorStyle={{ color: 'red' }}
                     errorMessage='ENTER A VALID EMAIL HERE'
+                    onChangeText={TextInputEmail => this.setState({TextInputEmail})}
+                    value={this.state.TextInputEmail}
                 />
 
                 <Input
@@ -101,7 +151,7 @@ class Inputs extends Component {
                     autoCapitalize="none"
                     returnKeyType="next"
                     secureTextEntry={true}
-                    onChangeText={this.handlePassword}
+                    //onChangeText={this.handlePassword}
                     leftIcon={
                         <Icon
                             name='passport'
@@ -110,28 +160,37 @@ class Inputs extends Component {
                     }
                     errorStyle={{ color: 'red' }}
                     errorMessage='AT LEAST 6 WORDS OR NUMBERS '
+                    onChangeText={TextInputPassword => this.setState({ TextInputPassword })}
+                    value={this.state.TextInputPassword}
                 />
-
-                <CheckBox
-                    title='商務會議'
-                    checkedIcon='dot-circle-o'
-                    uncheckedIcon='circle-o'
-                    checked={this.state.checked}
-                    onPress={() => this.setState({ checked: !this.state.checked })} />
-                <CheckBox
-                    title='校園會議'
-                    checkedIcon='dot-circle-o'
-                    uncheckedIcon='circle-o'
-                    checked={this.state.checked}
-                    onPress={() => this.setState({ checked: !this.state.checked })} />
 
                 <TouchableOpacity
                     style={styles.submitButton}
                     onPress={
-                        () => this.register(this.state.email, this.state.password)
+                        () => this.signin(this.state.TextInputEmail, this.state.TextInputPassword)
                     }>
-                    <Text style={styles.submitButtonText}>確認資料</Text>
+                    <Text style={styles.submitButtonText}>Sign in</Text>
                 </TouchableOpacity>
+                <Button
+                    title="沒有帳號? 註冊一個"
+                    type="clear"
+                    //onPress={() => navigation.navigate('註冊頁面')}
+                    onPress={
+                        () => this.regis()
+                    }
+
+                />
+
+                <Text>'Please insert any value to convert in SHA 256'</Text>
+                <TouchableOpacity
+                    style={styles.button}
+                    title="Conver sh5"
+                    //onPress={this.convertSHA.bind(this)}
+                    onPress={()=> this.convertSHA()}
+                >
+                  <Text>Conver to SHA 256</Text>
+                </TouchableOpacity>
+                <Text style={styles.textStyle}>{this.state.text}</Text>
 
             </View>
         )
