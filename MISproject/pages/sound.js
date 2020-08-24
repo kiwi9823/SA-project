@@ -1,21 +1,19 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity ,BackHandler} from 'react-native';
-import { Header, Slider } from 'react-native-elements'
-import Icon from 'react-native-vector-icons/FontAwesome';
-
+import {StyleSheet, View, BackHandler, Modal, TouchableHighlight, SafeAreaView,TextInput, FlatList, ActivityIndicator, ScrollView, RefreshControl, PermissionsAndroid,Alert} from 'react-native';
+import { Header, Slider, Icon, Input, Button} from 'react-native-elements'
 import Sound from 'react-native-sound'
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import WordFile,{helper} from './wordfile';
+import {BottomNavigation, Text, FAB, Portal, Provider} from 'react-native-paper';
+import RNFS from 'react-native-fs';
+
+
 
 let whoosh;
 
-// helper("sdfsd");
-export default class App extends Component {
-
-
+export default class App extends React.Component {
     constructor(props) {
         super(props);
-
+    
         this.state = {
             volume: 0.5,
             seconds: 0, //秒數
@@ -26,11 +24,26 @@ export default class App extends Component {
             maximumValue: 0, //滑輪直
             play: false,
             pause: false,
-            resume: false
-        }
+            resume: false,
 
+          summ: [],
+          summ_data:[],
+          trans: [],
+          trans_data:[],
+          isLoading: true,
+          // hasPermission: undefined,
+          index: 0,
+          routes: [
+            { key: 'trans', title: 'Transcript', icon: 'text-to-speech',color:'#5C9FCC'},
+            { key: 'summ', title: 'Summary', icon: 'text-short',color:'#296C99'},
+          ],
+          response: [],
+        };
     }
-    componentDidMount() {
+        
+
+
+    async componentDidMount() {
         //音檔位置
         let url = this.props.route.params.url;
         //初始化
@@ -38,7 +51,6 @@ export default class App extends Component {
             if (err) {
                 return console.log("??" + err)
             }
-
             let totalTime = whoosh.getDuration();
             //let totalTime = time + 1;
             console.log("時間" + totalTime);
@@ -47,14 +59,11 @@ export default class App extends Component {
             let totalSec = totalTime - totalMin * 60; //秒钟数并判断前缀是否 + '0'
             totalSec = totalSec > 9 ? totalSec : '0' + totalSec;
             this.setState({
-
                 totalMin,
                 totalSec,
                 maximumValue: totalTime,
             })
-
         })
-        
         backAction = async () => {
             this.props.navigation.navigate('歷史紀錄');
             this.setState({
@@ -69,16 +78,57 @@ export default class App extends Component {
            
             console.log("pause"+this.state.resume)
             whoosh.pause();
-           
         };
         BackHandler.addEventListener("hardwareBackPress", backAction);
 
+    // /*用server資料的時候*/
+    //     let formData = new FormData();
+    //     // let filename = datas;
+    //     formData.append('userName', 'testClient');
+    //     formData.append('fileName', 'pythontest');
+    
+    //     const response = await fetch('http://140.115.81.199:9943/textFetch/testClient/pythontest',
+    //       {
+    //         method: 'POST',
+    //         // headers: {
+    //         //   Accept: 'application/json',
+    //         //   'Content-Type': 'multipart/form-data'
+    //         // },
+    //         body: formData
+    //       });
+    //     //console.log(response)
+    //     const json = await response.json();
+    //     //Transcript
+    //     const transSTR = JSON.stringify(json.transcript);
+    //     const transData = transSTR.slice(1,-1); console.log(transData.slice(1,-1));
+    //     //Summary
+    //     const summSTR = JSON.stringify(json.summary);
+    //     const summData = summSTR.slice(1,-1); console.log(json.summary);
+    //     this.setState({ 
+    //         summ: json.summary, 
+    //         summ_data: summData, 
+    //         trans:json.transcript, 
+    //         trans_data: transData, 
+    //         isLoading:false 
+    //     });
+        
+    /*用假資料的時候*/
+        const response = await fetch('https://gist.githubusercontent.com/kiwi9823/2cf7242d8f10b04e77aa72acd246462e/raw/1a58a888832d865b5086b87c9410a3b4800bc43f/test.json');
+        const json = await response.json();
+        //Transcript
+        const transSTR = JSON.stringify(json.transcript);
+        const transData = transSTR.slice(1,-1); console.log(transSTR.slice(1,-1));
+        //Summary
+        const summSTR = JSON.stringify(json.summary);
+        const summData = summSTR.slice(19,-3); console.log(summSTR.slice(19,-3));
+        this.setState({ summ: json.summary, summ_data: summData,trans_data: transData, isLoading:false, visible:true});
     }
+
     componentWillUnmount() {
         this.time && clearTimeout(this.time);
-
     }
-    // 播放
+
+      // 播放
     _play = () => {
         this.setState({ pause: false, play: true })
 
@@ -94,38 +144,31 @@ export default class App extends Component {
                 let totalSec = totalTime - totalMin * 60; //秒钟数并判断前缀是否 + '0'
                 totalSec = totalSec > 9 ? totalSec : '0' + totalSec;
                 this.setState({
-    
                     totalMin,
                     totalSec,
                     maximumValue: totalTime,
-                })
-    
+                })   
                 if (err) {
                     return console.log(+err)
-                }
-               
-    
+                }   
                 whoosh.play(success => {
-    
                     if (success) {
                         console.log('success - 播放成功')
                         this._stop();
-                    } else {
+                    } 
+                    else {
                         console.log('fail - 播放失败')
                     }
-                })
-    
-            });
-    
+                })   
+            });   
             console.log("play" + url);
-        }else{
+        }
+        else{
             whoosh.play();
             console.log("resume")
             this.setState({resume:false,pause: false, play: true})
             console.log("play"+this.state.resume)
         }
-       
-
         this.time = setInterval(() => {
             whoosh.getCurrentTime(seconds => {
                 seconds = Math.ceil(seconds);
@@ -135,13 +178,11 @@ export default class App extends Component {
         // if (this.state.pause) {
         //     whoosh.pause();
         //     console.log("pasue");
-        // }
-
+        // }         
     }
+
     // 暂停
     _pause = () => {
-
-      
         clearInterval(this.time);
         this.setState({ pause: true, play: false,resume:true })
         console.log("pause"+this.state.resume)
@@ -150,7 +191,6 @@ export default class App extends Component {
 
     //恢復
     _stop = () => {
-
         clearInterval(this.time);
         this.setState({
             nowMin: 0,
@@ -158,8 +198,8 @@ export default class App extends Component {
             seconds: 0,
         })
         this.setState({ pause: true, play: false })
-
     }
+
     _getNowTime = (seconds) => {
         let nowMin = this.state.nowMin,
             nowSec = this.state.nowSec;
@@ -176,112 +216,478 @@ export default class App extends Component {
             seconds
         })
     }
-    render() {
 
+    Transcript = () => {
+        const [state, setState] = React.useState({ open: false });
+        const onStateChange = ({ open }) => setState({ open });
+        const { open } = state;
+
+        return (
+            <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
+                <View>
+                    <Text style={{ fontSize: 15 }}>{this.state.trans_data}{"\n"}</Text>
+                </View> 
+
+                {/* <FlatList
+                    data={this.state.trans}
+                    extraData={state}
+                    keyExtractor={({ id }, index) => id}
+                    renderItem={({ item }) => (
+                      <View>
+                        <Text style={{ fontSize: 15 }}>{item.text}{"\n"}</Text>
+                      </View>
+                    )}
+                /> */}
+
+                <Provider>
+                    <Portal>
+                        <FAB.Group
+                            open={open}
+                            icon={open ? 'close' : 'plus'}
+                            fabStyle={{backgroundColor:"rgba(231,76,60,1)"}}
+                  
+                            actions={[
+                              // { icon: 'plus', onPress: () => console.log('Pressed add') },
+                                {
+                                  icon: 'format-title',
+                                  label: 'Edit Text',
+                                  onPress: () => this.EditText(),
+                                },
+                                // {
+                                //   icon: 'format-color-highlight',
+                                //   label: 'Highlight',
+                                //   onPress: () => console.log('Pressed Hightlight'),
+                                // },
+                                {
+                                  icon: 'content-save-edit',
+                                  label: 'Save Edit',
+                                  onPress: () => console.log('Pressed save edit'),
+                                },
+                                {
+                                  icon: 'download',
+                                  label: 'Download',
+                                  onPress: () => this.trans_download(),
+                                },
+                            ]}
+        
+                            onStateChange={onStateChange}
+                            onPress={() => {
+                                if (open) {
+                                  // do something if the speed dial is open
+                                }
+                            }}
+                        />
+                    </Portal>
+                </Provider>
+            </SafeAreaView>
+        );
+    }
+ 
+    Summary = () => {
+        const [state, setState] = React.useState({ open: false });
+        const onStateChange = ({ open }) => setState({ open });
+        const { open } = state;
+
+        const styles = StyleSheet.create({
+            centeredView: {
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 22
+            },
+            modalView: {
+              margin: 20,
+              backgroundColor: "white",
+              borderRadius: 20,
+              padding: 35,
+              alignItems: "center",
+              shadowColor: "#000",
+              shadowOffset: {
+                width: 0,
+                height: 2
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5
+            },
+            openButton: {
+              backgroundColor: "#F194FF",
+              borderRadius: 20,
+              padding: 10,
+              elevation: 2
+            },
+            textStyle: {
+              color: "white",
+              fontWeight: "bold",
+              textAlign: "center"
+            },
+            modalText: {
+              marginBottom: 15,
+              textAlign: "center",
+              color: "black",
+              fontSize: 18,
+              fontWeight: "bold",
+            }
+          });
+
+          const [modalVisible, setModalVisible] = React.useState(false);
+          const [value, onChangeText] = React.useState('');
+
+        return (
+            <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
+
+                <Text style={{textAlign:"center", color:'grey',paddingBottom:10}}>** 可在右下功能鍵中自由設定摘要句數</Text>
+                <FlatList
+                    data={this.state.summ}
+                    extraData={state}
+                    keyExtractor={({ id }, index) => id}
+                    renderItem={({ item }) => (
+                      <View>
+                        <Text style={{ fontSize: 15 }}>{item.text}{"\n"}</Text>
+                      </View>
+                    )}
+                />
+                <Provider>
+                    <Portal>
+                        <FAB.Group
+                            open={open}
+                            icon={open ? 'close' : 'plus'}
+                            fabStyle={{backgroundColor:"rgba(231,76,60,1)"}}
+                            
+                            actions={[
+                                { icon: 'sort', 
+                                  label:'Setting',
+                                  onPress: () => setModalVisible(true),
+                                },
+                                {
+                                //   icon: 'format-title',
+                                  icon: 'format-title',
+                                  label: 'Edit Text',
+                                  onPress: () => this.EditText(),
+                                },
+                                // {
+                                //   icon: 'format-color-highlight',
+                                //   label: 'Highlight',
+                                //   onPress: () => console.log('Pressed export'),
+                                // },
+                                {
+                                  icon: 'content-save-edit',
+                                  label: 'Save Edit',
+                                  onPress: () => console.log('Pressed save ssedit'),
+                                },
+                                {
+                                  icon: 'download',
+                                  label: 'Download',
+                                  onPress: () => this.summ_download(),
+                                },
+                            ]}          
+                            
+                            onStateChange={onStateChange}
+                            onPress={() => {
+                                if (open) {
+                                  // do something if the speed dial is open
+                                }
+                            }}
+                        />
+                    </Portal>
+                </Provider>
+                <View style={styles.centeredView}>
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={modalVisible}
+            >
+              <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                  <Text style={styles.modalText}>Place a Number</Text>
+                        <TextInput
+                        style={{ height: 40, width:130, backgroundColor:'lightgray', marginBottom:15, paddingHorizontal:10}}
+                        onChangeText={text => onChangeText(text)}
+                        placeholder="Ex: '10'"
+                        value={value}
+                        />
+                  <TouchableHighlight
+                    style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
+                    onPress={() => {
+                        setModalVisible(!modalVisible);
+                        this._onRefresh();
+                      }}
+                  >
+                    <Text style={styles.textStyle}>Hide Modal</Text>
+                  </TouchableHighlight>
+                </View>
+              </View>
+            </Modal>
+
+          </View>
+            </SafeAreaView>
+        );
+    }
+
+    EditText = () => {
+        console.log('Pressed edit')
+    }
+  
+    trans_download = () => {
+        PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE)
+        // create a path you want to write to
+        // :warning: on iOS, you cannot write into `RNFS.MainBundlePath`,
+        // but `RNFS.DocumentDirectoryPath` exists on both platforms and is writable
+        var path = RNFS.DownloadDirectoryPath + '/transcript.txt';
+        console.log(path);
+        // write the file
+        RNFS.writeFile(path, this.state.trans_data, 'utf8')
+        // RNFS.writeFile(path, this.state.tran, 'utf8')
+            .then((success) => {
+                Alert.alert(
+                    "Download File",
+                    "Success!",
+                    [
+                        // {
+                        //   text: "Cancel",
+                        //   onPress: () => console.log("Cancel Pressed"),
+                        //   style: "cancel"
+                        // },
+                        { text: "OK", onPress: () => console.log("OK Pressed") }
+                    ],
+                    { cancelable: false }
+                );
+                console.log('FILE WRITTEN!');
+            })
+            .catch((err) => {
+                console.log(err.message);
+            });
+    }
+
+    summ_download = () => {
+        PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE)        
+        // create a path you want to write to
+        // :warning: on iOS, you cannot write into `RNFS.MainBundlePath`,
+        // but `RNFS.DocumentDirectoryPath` exists on both platforms and is writable
+        var path = RNFS.DownloadDirectoryPath + '/summary.txt';
+        console.log(path);
+        // write the file
+        RNFS.writeFile(path, this.state.summ_data, 'utf8')
+            .then((success) => {
+                Alert.alert(
+                    "Download File",
+                    "Success!",
+                    [
+                        // {
+                        //   text: "Cancel",
+                        //   onPress: () => console.log("Cancel Pressed"),
+                        //   style: "cancel"
+                        // },
+                        { text: "OK", onPress: () => console.log("OK Pressed") }
+                    ],
+                    { cancelable: false }
+                );
+                console.log('FILE WRITTEN!');
+            })
+            .catch((err) => {
+                console.log(err.message);
+            });
+    }
+
+    _onRefresh = () => {
+        this.setState({ refreshing: true });
+        this.componentDidMount()
+        .then(() => {
+            this.setState({ refreshing: false });
+        });
+        this.wait(5000).then(() => {
+          this.setState({ refreshing: false });
+          //Alert message
+        });
+    }
+  
+    wait = (timeout) => {
+      return new Promise(resolve => {
+        setTimeout(resolve, timeout);
+      });
+    }
+
+    _handleIndexChange = index => this.setState({ index });
+    
+    _renderScene = BottomNavigation.SceneMap({
+        trans: this.Transcript,
+        summ: this.Summary,
+    });
+
+//   _goBack = () => console.log('Went back');
+//   _onSearch = () => console.log('Searching');
+//   _onMore = () => console.log('Shown more');
+
+
+    render() {
         let time = this.state;
         const { navigation } = this.props;
         let { play, pause } = this.state;
-        return (
-            <View style={{ flex: 1 }} >
+        const { isLoading } = this.state; //文件
 
-                <Header
-                    placement="left"
-                    backgroundColor='transparent'
-                    containerStyle={{ width: '100%', backgroundColor: '#3488C0', borderBottomWidth: 0 }}
-                    leftComponent={{
-                        icon: 'menu', type: 'entypo', color: '#fff', underlayColor: '#3488C0',
-                        onPress: () => navigation.dispatch(DrawerActions.openDrawer())
-                    }}
+        // const { onCancel, visible } = this.props;
+        // const reactNativeModalProps = {
+        //   onBackdropPress: onCancel,
+        // };
+        
+        // setTimeout(() => {isLoading
+            
+        // }, 3000);
 
-                    centerComponent={{
-                        text: this.props.route.params.name,
-                        style: {
-                            fontSize: 20,
-                            fontWeight: 'bold',
-                            fontFamily: 'Fonts.Lato',
-                            color: 'white'
-                        }
-                    }}
-                    // rightComponent={{ icon: 'export', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
-                />
-                <View style={{ flex: 1, backgroundColor: 'white', flexDirection: 'column', justifyContent: 'space-around' }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                        <View>
-                            <Text>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
+        //當isLoading為false時
+        if (!this.state.isLoading) {
 
+            return (
+                <View style={{flex:1}}>
+                    <Header
+                        placement="left"
+                        backgroundColor='transparent'
+                        containerStyle={{ width: '100%', backgroundColor: '#3488C0', borderBottomWidth: 0 }}
+                        leftComponent={{
+                            icon: 'menu', type: 'entypo', color: '#fff', underlayColor: '#3488C0',
+                            onPress: () => navigation.dispatch(DrawerActions.openDrawer())
+                        }}
+
+                        centerComponent={{
+                            text: this.props.route.params.name,
+                            style: {
+                                fontSize: 20,
+                                fontWeight: 'bold',
+                                fontFamily: 'Fonts.Lato',
+                                color: 'white'
+                            }
+                        }}
+                        // rightComponent={{ icon: 'export', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
+                    />
+
+                    <View style={{ flex: 1, backgroundColor: 'white', flexDirection: 'column', justifyContent: 'space-around' }}>
+                                {/* time&icon */}
+                        <View style={{ flex: 1, paddingTop:10, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                            <View>
+                                <Text style={{fontSize:20}}>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
+                            </View>
+                                {/* play&pause icon */}
+                            <View>
+                                {
+                                play ?
+                                    <Icon name='controller-paus' type='entypo' size={25} color="black" onPress={this._pause}/>
+                                     :
+                                    <Icon  name='controller-play' type='entypo' size={30} color="black" onPress={this._play}/>
+                                }
+                            </View>
                         </View>
-                        {/* play&pause icon */}
-
-                        <View>{
-                            play ?
-                                <TouchableOpacity
-                                    style={{
-
-                                        borderWidth: 1,
-                                        borderColor: 'rgba(0,0,0,0.2)',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        width: 50,
-                                        height: 50,
-                                        backgroundColor: 'black',
-                                        borderRadius: 10,
-                                    }}
-                                    onPress={this._pause}
-
-                                // onPress= {this.onPress(this,'foo')}
-                                >
-                                    <Icon name={"pause"} size={25} color="white" />
-                                </TouchableOpacity>
-                                :
-                                <TouchableOpacity
-                                    style={{
-                                        borderWidth: 1,
-                                        borderColor: 'rgba(0,0,0,0.2)',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        width: 50,
-                                        height: 50,
-                                        backgroundColor: 'black',
-                                        borderRadius: 10,
-                                    }}
-
-                                    onPress={this._play}
-                                >
-                                    <Icon name={"play"} size={25} color="white" />
-                                </TouchableOpacity>
-                        }
-
+                                {/* Slider */}
+                        <View style={{ flex: 1, paddingHorizontal:10, justifyContent: 'space-around'}}>
+                            <Slider                      
+                                // disabled //禁止滑动
+                                maximumTrackTintColor={'#ccc'} //右侧轨道的颜色
+                                minimumTrackTintColor={'skyblue'} //左侧轨道的颜色
+                                maximumValue={this.state.maximumValue} //滑块最大值
+                                minimumValue={0} //滑块最小值
+                                value={this.state.seconds}
+                                onSlidingComplete={(value) => { //用户完成更改值时调用的回调（例如，当滑块被释放时）
+                                    value = parseInt(value);
+                                    this._getNowTime(value)
+                                    // 设置播放时间
+                                    whoosh.setCurrentTime(value);
+                                }} />
                         </View>
                     </View>
-                    <View>
 
+                    <View style={{ flex: 7, backgroundColor: 'white' }}>
+                        <BottomNavigation
+                            navigationState={this.state}
+                            onIndexChange={this._handleIndexChange}
+                            renderScene={this._renderScene}
+                            shifting={true}
+                        />
+                    </View>                            
+                </View>
+            );
+        } 
+        else {
+            return (
+                < ScrollView refreshControl={
+                    < RefreshControl
+                        refreshing={this.state.refreshing}
+                        onRefresh={this._onRefresh}
+                    />}
+                >
+                  <View style={{flex:1}}>
+                    <Header
+                        placement="left"
+                        backgroundColor='transparent'
+                        containerStyle={{ width: '100%', backgroundColor: '#3488C0', borderBottomWidth: 0 }}
+                        leftComponent={{
+                            icon: 'menu', type: 'entypo', color: '#fff', underlayColor: '#3488C0',
+                            onPress: () => navigation.dispatch(DrawerActions.openDrawer())
+                        }}
 
-                        <Slider
-                            // disabled //禁止滑动
-                            maximumTrackTintColor={'#ccc'} //右侧轨道的颜色
-                            minimumTrackTintColor={'skyblue'} //左侧轨道的颜色
-                            maximumValue={this.state.maximumValue} //滑块最大值
-                            minimumValue={0} //滑块最小值
-                            value={this.state.seconds}
-                            onSlidingComplete={(value) => { //用户完成更改值时调用的回调（例如，当滑块被释放时）
-                                value = parseInt(value);
-                                this._getNowTime(value)
-                                // 设置播放时间
-                                whoosh.setCurrentTime(value);
-                            }} />
+                        centerComponent={{
+                            text: this.props.route.params.name,
+                            style: {
+                                fontSize: 20,
+                                fontWeight: 'bold',
+                                fontFamily: 'Fonts.Lato',
+                                color: 'white'
+                            }
+                        }}
+                        // rightComponent={{ icon: 'export', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
+                    />
 
+                    <View style={{ flex: 1, backgroundColor: 'white', flexDirection: 'column', justifyContent: 'space-around' }}>
+                                {/* time&icon */}
+                        <View style={{ flex: 1, paddingTop:10, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                            <View>
+                                <Text style={{fontSize:20}}>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
+                            </View>
+                                {/* play&pause icon */}
+                            <View>
+                                {
+                                play ?
+                                    <Icon name='controller-paus' type='entypo' size={25} color="black" onPress={this._pause}/>
+                                     :
+                                    <Icon  name='controller-play' type='entypo' size={30} color="black" onPress={this._play}/>
+                                }
+                            </View>
+                        </View>
+                                {/* Slider */}
+                        <View style={{ flex: 1, paddingHorizontal:10, justifyContent: 'space-around'}}>
+                            <Slider                      
+                                // disabled //禁止滑动
+                                maximumTrackTintColor={'#ccc'} //右侧轨道的颜色
+                                minimumTrackTintColor={'skyblue'} //左侧轨道的颜色
+                                maximumValue={this.state.maximumValue} //滑块最大值
+                                minimumValue={0} //滑块最小值
+                                value={this.state.seconds}
+                                onSlidingComplete={(value) => { //用户完成更改值时调用的回调（例如，当滑块被释放时）
+                                    value = parseInt(value);
+                                    this._getNowTime(value)
+                                    // 设置播放时间
+                                    whoosh.setCurrentTime(value);
+                                }} />
+                        </View>
                     </View>
-                </View>
-                <View style={{ flex: 4, backgroundColor: 'white' }}>
-                    <WordFile />
-                </View>
-            </View>
-        );
+                    
+                    {/* <View >
+                        <Text style={{textAlign:'center', fontSize:20, fontWeight:"bold", padding:30}}>Network Error!!!</Text>
+                        <Text style={{textAlign:'center', fontSize:15}}>pull down to refresh</Text>
+                    
+                    </View>    */}
+                        {isLoading && 
+                            (
+                            <ActivityIndicator
+                                style={{ height: 80 }}
+                                color="#C00"
+                                size="large"
+                            />
+                            )}  
+                  
+                  </View>
+                
+
+                </ ScrollView>
+            );
+        }
     }
 }
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F5FCFF',
-    },
-});
