@@ -34,7 +34,7 @@ export default class App extends Component {
             //audioPath: AudioUtils.DocumentDirectoryPath + 'test.aac',  // 文件路径
             //現在他上傳的時間 使用者名稱
             //要尊守規定
-            audioPath: AudioUtils.DocumentDirectoryPath+`/name-${year + month + day + hour + minute + second}.awb`,  // 文件路径
+            audioPath: AudioUtils.DocumentDirectoryPath+`/name-${year}-${month}-${day}_${hour}${minute}${second}.awb`,  // 文件路径
             recording: false, //是否录音
             pause: false, //录音是否暂停
             stop: false, //录音是否停止
@@ -160,7 +160,7 @@ export default class App extends Component {
 
         this.setState({
 
-            audioPath: AudioUtils.DocumentDirectoryPath + `/name-${year + month + day + hour + minute + second}.awb`,  // 文件路径
+            audioPath: AudioUtils.DocumentDirectoryPath+`/name-${year}-${month}-${day}_${hour}${minute}${second}.awb`,  // 文件路径
             currentTime: 0, //录音时长
         })
 

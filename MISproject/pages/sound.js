@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
-import {StyleSheet, View, BackHandler, Modal, TouchableHighlight, SafeAreaView,TextInput, FlatList, ActivityIndicator, ScrollView, RefreshControl, PermissionsAndroid,Alert} from 'react-native';
+import {useIsFocused,StyleSheet, View, BackHandler, Modal, TouchableHighlight, SafeAreaView,TextInput, FlatList, ActivityIndicator, ScrollView, RefreshControl, PermissionsAndroid,Alert} from 'react-native';
 import { Header, Slider, Icon, Input, Button} from 'react-native-elements'
 import Sound from 'react-native-sound'
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import {BottomNavigation, Text, FAB, Portal, Provider} from 'react-native-paper';
 import RNFS from 'react-native-fs';
+import { cos } from 'react-native-reanimated';
 
 
 
@@ -40,10 +41,12 @@ export default class App extends React.Component {
           response: [],
           numberOfsummary: '',
           text:'',
+          OldnumberOfsummary:'5',
         };
     }
         
     async componentDidMount() {
+
         //音檔位置
         let url = this.props.route.params.url;
         //初始化
@@ -63,70 +66,116 @@ export default class App extends React.Component {
                 totalSec,
                 maximumValue: totalTime,
             })
-        })
-        backAction = async () => {
-            this.props.navigation.navigate('歷史紀錄');
-            this.setState({
-                play:false,
-                pause: false,
-                resume: false,
-                nowMin: 0,
-                nowSec: 0,
-                seconds: 0
-            })
-            clearInterval(this.time);
-           
-            console.log("pause"+this.state.resume)
-            whoosh.pause();
-        };
-        BackHandler.addEventListener("hardwareBackPress", backAction);
+        });
 
-    // /*用server資料的時候*/
-    //     let formData = new FormData();
-    //     // let filename = datas;
-    //     formData.append('userName', 'testClient');
-    //     formData.append('fileName', 'pythontest');
-    
-    //     const response = await fetch('http://140.115.81.199:9943/textFetch/testClient/pythontest',
-    //       {
-    //         method: 'POST',
-    //         // headers: {
-    //         //   Accept: 'application/json',
-    //         //   'Content-Type': 'multipart/form-data'
-    //         // },
-    //         body: formData
-    //       });
-    //     //console.log(response)
-    //     const json = await response.json();
-    //     //Transcript
-    //     const transSTR = JSON.stringify(json.transcript);
-    //     const transData = transSTR.slice(1,-1); console.log(transData.slice(1,-1));
-    //     //Summary
-    //     const summSTR = JSON.stringify(json.summary);
-    //     const summData = summSTR.slice(1,-1); console.log(json.summary);
-    //     this.setState({ 
-    //         summ: json.summary, 
-    //         summ_data: summData, 
-    //         trans:json.transcript, 
-    //         trans_data: transData, 
-    //         isLoading:false 
-    //     });
-        
+        BackHandler.addEventListener("hardwareBackPress", this.backAction.bind(this));
+
+    /*用server資料的時候*/
+        let formData = new FormData();
+        // let filename = datas;
+        formData.append('userName', 'testClient');
+        formData.append('fileName', this.props.route.params.name);
+
+        const response = fetch('http://140.115.81.199:9943/textFetch/5',
+          {
+            method: 'POST',
+            // headers: {
+            //   Accept: 'application/json',
+            //   'Content-Type': 'multipart/form-data'
+            // },
+            body: formData
+          })
+          .then((resp)=>{ return resp.json() })
+          .then((json)=>{ 
+              console.log(json) 
+
+            //Transcript
+            // const transSTR = JSON.stringify(json.transcript);
+            // const transdata = transSTR.replace(/\\/g, ""); 
+            // const joinT = transdata.split("n"); 
+            // const replaceT=joinT.join(`\n`);
+            // const transData = replaceT.slice(1,-1); 
+
+            const transSTR = JSON.stringify(json.transcript).replace(/\\/g, "").split("n").join(`\n`);
+            const transData = transSTR.slice(1,-1);
+
+            //Summary
+            // const summSTR = JSON.stringify(json.summary);     //"我n愛n你"
+            // const summdata = summSTR.split("n");              //“我，愛，你”
+            // const joinS = summdata.join(`\n`);                //“我    愛     你”
+            // const summData = joinS.slice(1,-1);               //我    愛     你
+            const summSTR = JSON.stringify(json.summary).replace(/\\/g, "").split("n").join(`\n`+"- ");
+            const summData = summSTR.replace(/['"]+/g, "- ").slice(0,-4);
+
+            this.setState({summ:json.summary, summ_data: summData, trans:json.transcript, trans_data: transData, isLoading:false, visible:true});
+            });
+
+        //   console.log(response)    
+        // const json = await response.json(); 
+
     /*用假資料的時候*/
-        const response = await fetch('https://gist.githubusercontent.com/kiwi9823/2cf7242d8f10b04e77aa72acd246462e/raw/1a58a888832d865b5086b87c9410a3b4800bc43f/test.json');
-        const json = await response.json();
-        //Transcript
-        const transSTR = JSON.stringify(json.transcript);
-        const transData = transSTR.slice(1,-1); console.log(transSTR.slice(1,-1));
-        //Summary
-        const summSTR = JSON.stringify(json.summary);
-        const summData = summSTR.slice(19,-3); console.log(summSTR.slice(19,-3));
-        this.setState({ summ: json.summary, summ_data: summData,trans_data: transData, isLoading:false, visible:true});
+    //     const response = await fetch('https://gist.githubusercontent.com/kiwi9823/2cf7242d8f10b04e77aa72acd246462e/raw/25cc4626632c65cea58499e58d6b005eac4bb366/test.json');
+    //     const json = await response.json();
+    //    //Transcript
+    //         const transSTR = JSON.stringify(json.transcript);console.log("11"+transSTR);
+    //         const transdata = transSTR.replace("n","");console.log("22"+transdata);
+    //         const transData = transdata.slice(1,-1); console.log("33"+transData);
+    //         //Summary
+    //         const summSTR = JSON.stringify(json.summary);console.log("11"+summSTR);
+    //         const summdata = summSTR.split("n");console.log("22"+summdata);
+    //         const joinS = summdata.join("");console.log("2"+joinS);
+
+    //         const summdata2 = joinS.slice("'\'");console.log("33"+summdata2);
+    //         const joinS2 = summdata2.join("");console.log("3"+joinS2);
+    //         const summData = joinS2.slice(1,-1);console.log("44"+summData);
+    //         this.setState({summ:json.summary, summ_data: summData, trans:json.transcript, trans_data: transData, isLoading:false, visible:true});
+
+
+        // const response = await fetch('https://gist.githubusercontent.com/kiwi9823/14334bca028cebadde46437052504410/raw/eab818df1a12784ca8229613cba35a43af59cce2/22test.json');
+        // const json = await response.json();
+        // //Transcript
+        // const transSTR = JSON.stringify(json.transcript);
+        // const transData = transSTR.slice(1,-1); console.log(transSTR.slice(1,-1));
+        // //Summary
+        // const summSTR = JSON.stringify(json.summary);
+        // const summData = summSTR.slice(19,-3); console.log(summSTR.slice(19,-3));
+        // this.setState({ summ: json.summary, summ_data: summData,trans_data: transData, isLoading:false, visible:true});
     }
 
     componentWillUnmount() {
         this.time && clearTimeout(this.time);
     }
+
+    backAction = async () => {
+        this.props.navigation.navigate('歷史紀錄');
+        this.setState({
+            play:false,
+            pause: false,
+            resume: false,
+            nowMin: 0,
+            nowSec: 0,
+            seconds: 0,
+
+            summ: [],
+            summ_data:[],
+            trans: [],
+            trans_data:[],
+            isLoading: true,
+            // hasPermission: undefined,
+            index: 0,
+            routes: [
+              { key: 'trans', title: 'Transcript', icon: 'text-to-speech',color:'#5C9FCC'},
+              { key: 'summ', title: 'Summary', icon: 'text-short',color:'#296C99'},
+            ],
+            response: [],
+            numberOfsummary: '',
+            text:'',
+        })
+        clearInterval(this.time);
+       
+        console.log("pause"+this.state.summ_data)
+        whoosh.pause();
+    };
 
       // 播放
     _play = () => {
@@ -225,7 +274,7 @@ export default class App extends React.Component {
         return (
             <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
                 <View>
-                    <Text style={{ fontSize: 15 }}>{this.state.trans_data}{"\n"}</Text>
+                    <Text style={{ fontSize: 16}}>{this.state.trans_data}{"\n"}</Text>
                 </View> 
 
                 {/* <FlatList
@@ -293,26 +342,26 @@ export default class App extends React.Component {
               flex: 1,
               justifyContent: "center",
               alignItems: "center",
-              marginTop: 22
+              marginTop: 22,
             },
             modalView: {
               margin: 20,
               backgroundColor: "white",
               borderRadius: 20,
-              padding: 35,
+              padding: 30,
               alignItems: "center",
-              shadowColor: "#000",
+              shadowColor: "blue",
               shadowOffset: {
                 width: 0,
                 height: 2
               },
-              shadowOpacity: 0.25,
+              shadowOpacity: 5,
               shadowRadius: 3.84,
-              elevation: 5
+              elevation: 100
             },
             openButton: {
               backgroundColor: "#F194FF",
-              borderRadius: 20,
+              borderRadius: 10,
               padding: 10,
               elevation: 2
             },
@@ -335,9 +384,21 @@ export default class App extends React.Component {
 
         return (
             <SafeAreaView style={{ flex: 1, padding: 15, paddingBottom:50}}>
+                < ScrollView refreshControl={
+                    < RefreshControl
+                        refreshing={this.state.refreshing}
+                        onRefresh={this._onRefresh}
+                    />}
+                >
 
                 <Text style={{textAlign:"center", color:'grey',paddingBottom:10}}>** 可在右下功能鍵中自由設定摘要句數</Text>
-                <FlatList
+                
+                <View>
+                    <Text style={{ fontSize: 16}}>{this.state.summ_data}{"\n"}</Text>
+                </View> 
+
+                </ScrollView>
+                {/* <FlatList
                     data={this.state.summ}
                     extraData={state}
                     keyExtractor={({ id }, index) => id}
@@ -346,7 +407,8 @@ export default class App extends React.Component {
                         <Text style={{ fontSize: 15 }}>{item.text}{"\n"}</Text>
                       </View>
                     )}
-                />
+                />  */}
+
                 <Provider>
                     <Portal>
                         <FAB.Group
@@ -404,20 +466,30 @@ export default class App extends React.Component {
                         keyboardType = 'numeric'
                         style={{ height: 40, width:130, backgroundColor:'lightgray', marginBottom:15, paddingHorizontal:10}}
                         onChangeText={(text)=> this.onChanged(text)}
-                        placeholder="Ex: '10'"
-                        value={this.state.numberOfsummary}
+                        placeholder={this.state.OldnumberOfsummary}
                         maxLength={100}  //setting limit of input
                         />
-                  <TouchableHighlight
-                    style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
-                    onPress={() => {
-                        setModalVisible(!modalVisible);
-                        this.getNumofSummary(this.state.numberOfsummary)
-                        // this._onRefresh();
-                      }}
-                  >
-                    <Text style={styles.textStyle}>Hide Modal</Text>
-                  </TouchableHighlight>
+                        <View style={{flexDirection: 'row'}}>
+                            <TouchableHighlight
+                                style={{ ...styles.openButton, backgroundColor: "#2196F3", marginRight:10}}
+                                onPress={() => {
+                                    setModalVisible(!modalVisible);
+                                    this.getNumofSummary(this.state.numberOfsummary)
+                                    // this._onRefresh();
+                                }}
+                            >
+                                <Text style={styles.textStyle}>Submit</Text>
+                            </TouchableHighlight>
+
+                            <TouchableHighlight
+                                style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
+                                onPress={() => {
+                                    setModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.textStyle}>Close</Text>
+                            </TouchableHighlight>
+                        </View>
                 </View>
               </View>
             </Modal>
@@ -439,36 +511,41 @@ export default class App extends React.Component {
                 alert("please enter numbers only");
             }
         }
-        this.setState({ numberOfsummary: newText });
+        this.setState({ numberOfsummary: newText});
     }
 
     getNumofSummary = (numberOfsummary) => {
-        
-        // //const { TextInputEmail }  = this.state ;
-        // //const { TextInputPassword }  = this.state ;
-        // let formData = new FormData();
-        // formData.append('Email', numberOfsummary);
-        // //formData.append('Password', TextInputPassword);
-        // //formData.append('Password', sha256);
-        // fetch(`http://140.115.81.199:9943/PassGet`,
-        // {
-        //    method: 'POST',
-        //    headers: {
-        //       'Accept': 'application/json',
-        //       'Content-Type': 'multipart/form-data',
-        //    },
-        //    body: formData
-        // })
-        // .then(response => {
-        //    console.log(response.status);
-        // })
-        // .then(result => {
-        //    console.log("success", result)
-        // })
-        // .catch(error => {
-        //    console.log("error", error)
-        // })
+
+        this.setState({OldnumberOfsummary: numberOfsummary});
         console.log(numberOfsummary);
+        
+        let formData = new FormData();
+        // let filename = datas;
+        formData.append('userName', 'testClient');
+        formData.append('fileName', this.props.route.params.name);
+
+        const response = fetch(`http://140.115.81.199:9943/sumSet/${numberOfsummary}`,
+          {
+            method: 'POST',
+            // headers: {
+            //   Accept: 'application/json',
+            //   'Content-Type': 'multipart/form-data'
+            // },
+            body: formData
+          }).then(response => {
+            console.log(response.status);
+         })
+          .then((resp)=>{ return resp.json() })
+          .then((json)=>{ 
+              console.log(json) 
+
+            //Summary
+            const summSTR = JSON.stringify(json.summary);
+            const summData = summSTR.slice(1,-1);
+            this.setState({summ:json.summary, summ_data: summData});
+
+            });
+        
     }
 
     EditText = () => {
@@ -480,7 +557,13 @@ export default class App extends React.Component {
         // create a path you want to write to
         // :warning: on iOS, you cannot write into `RNFS.MainBundlePath`,
         // but `RNFS.DocumentDirectoryPath` exists on both platforms and is writable
-        var path = RNFS.DownloadDirectoryPath + '/transcript.txt';
+        var date = new Date().getDate(); //To get the Current Date
+        var month = new Date().getMonth() + 1; //To get the Current Month
+        var year = new Date().getFullYear(); //To get the Current Year
+        var hours = new Date().getHours(); //To get the Current Hours
+        var min = new Date().getMinutes(); //To get the Current Minutes
+
+        var path = RNFS.DownloadDirectoryPath + `/trans${this.props.route.params.name}_${year}${month}${date}_${hours}${min}.txt`;
         console.log(path);
         // write the file
         RNFS.writeFile(path, this.state.trans_data, 'utf8')
@@ -511,7 +594,13 @@ export default class App extends React.Component {
         // create a path you want to write to
         // :warning: on iOS, you cannot write into `RNFS.MainBundlePath`,
         // but `RNFS.DocumentDirectoryPath` exists on both platforms and is writable
-        var path = RNFS.DownloadDirectoryPath + '/summary.txt';
+        var date = new Date().getDate(); //To get the Current Date
+        var month = new Date().getMonth() + 1; //To get the Current Month
+        var year = new Date().getFullYear(); //To get the Current Year
+        var hours = new Date().getHours(); //To get the Current Hours
+        var min = new Date().getMinutes(); //To get the Current Minutes
+
+        var path = RNFS.DownloadDirectoryPath + `/summ${this.props.route.params.name}_${year}${month}${date}_${hours}${min}.txt`;
         console.log(path);
         // write the file
         RNFS.writeFile(path, this.state.summ_data, 'utf8')
@@ -537,10 +626,11 @@ export default class App extends React.Component {
     }
 
     _onRefresh = () => {
+        console.log("refresh")
         this.setState({ refreshing: true });
         this.componentDidMount()
         .then(() => {
-            this.setState({ refreshing: false });
+            this.setState({ refreshing: false });                    
         });
         this.wait(5000).then(() => {
           this.setState({ refreshing: false });
@@ -572,16 +662,7 @@ export default class App extends React.Component {
         let { play, pause } = this.state;
         const { isLoading } = this.state; //文件
 
-        // const { onCancel, visible } = this.props;
-        // const reactNativeModalProps = {
-        //   onBackdropPress: onCancel,
-        // };
-        
-        // setTimeout(() => {isLoading
-            
-        // }, 3000);
-
-        //當isLoading為false時
+         //當isLoading為false時
         if (!this.state.isLoading) {
 
             return (
@@ -591,27 +672,31 @@ export default class App extends React.Component {
                         backgroundColor='transparent'
                         containerStyle={{ width: '100%', backgroundColor: '#3488C0', borderBottomWidth: 0 }}
                         leftComponent={{
-                            icon: 'menu', type: 'entypo', color: '#fff', underlayColor: '#3488C0',
-                            onPress: () => navigation.dispatch(DrawerActions.openDrawer())
+                            icon: 'close', color: '#fff', underlayColor: '#3488C0',size:30,
+                            onPress: () => this.backAction()
                         }}
 
                         centerComponent={{
                             text: this.props.route.params.name,
                             style: {
-                                fontSize: 20,
+                                fontSize: 22,
+                                alignContent:'space-around',
                                 fontWeight: 'bold',
                                 fontFamily: 'Fonts.Lato',
                                 color: 'white'
                             }
                         }}
-                        // rightComponent={{ icon: 'export', type: 'entypo', color: '#fff', underlayColor: '#3488C0', onPress: () => { } }}
+                        // rightComponent={{ 
+                        //     icon: 'cw', type: 'entypo', color: '#fff', underlayColor: '#3488C0', 
+                        //     onPress: () => {this._onRefresh()} 
+                        // }}
                     />
 
                     <View style={{ flex: 1, backgroundColor: 'white', flexDirection: 'column', justifyContent: 'space-around' }}>
                                 {/* time&icon */}
-                        <View style={{ flex: 1, paddingTop:10, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                        <View style={{ flex: 1, paddingTop:10, marginHorizontal:30, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
                             <View>
-                                <Text style={{fontSize:20}}>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
+                                <Text style={{fontSize:18}}>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
                             </View>
                                 {/* play&pause icon */}
                             <View>
@@ -666,14 +751,14 @@ export default class App extends React.Component {
                         backgroundColor='transparent'
                         containerStyle={{ width: '100%', backgroundColor: '#3488C0', borderBottomWidth: 0 }}
                         leftComponent={{
-                            icon: 'menu', type: 'entypo', color: '#fff', underlayColor: '#3488C0',
-                            onPress: () => navigation.dispatch(DrawerActions.openDrawer())
+                            icon: 'close', color: '#fff', underlayColor: '#3488C0',size:30,
+                            onPress: () => this.backAction()
                         }}
 
                         centerComponent={{
                             text: this.props.route.params.name,
                             style: {
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: 'bold',
                                 fontFamily: 'Fonts.Lato',
                                 color: 'white'
@@ -684,9 +769,9 @@ export default class App extends React.Component {
 
                     <View style={{ flex: 1, backgroundColor: 'white', flexDirection: 'column', justifyContent: 'space-around' }}>
                                 {/* time&icon */}
-                        <View style={{ flex: 1, paddingTop:10, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                        <View style={{ flex: 1, paddingTop:10, marginHorizontal:30, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
                             <View>
-                                <Text style={{fontSize:20}}>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
+                                <Text style={{fontSize:18}}>{time.nowMin}:{time.nowSec}/{time.totalMin}:{time.totalSec}</Text>
                             </View>
                                 {/* play&pause icon */}
                             <View>
@@ -716,24 +801,22 @@ export default class App extends React.Component {
                         </View>
                     </View>
                     
-                    {/* <View >
-                        <Text style={{textAlign:'center', fontSize:20, fontWeight:"bold", padding:30}}>Network Error!!!</Text>
-                        <Text style={{textAlign:'center', fontSize:15}}>pull down to refresh</Text>
-                    
-                    </View>    */}
-                        {isLoading && 
+                    <View >
+                        {/* <Text style={{textAlign:'center', fontSize:20, fontWeight:"bold", padding:30}}>Network Error!!!</Text> */}
+                        <Text style={{textAlign:'center', marginTop:30, fontSize:15, color:"grey"}}>pull down to refresh</Text>
+                    </View>   
+
+                        {/* {isLoading && 
                             (
                             <ActivityIndicator
                                 style={{ height: 80 }}
                                 color="#C00"
                                 size="large"
                             />
-                            )}  
+                            )}   */}
                   
                   </View>
-                
-
-                </ ScrollView>
+                 </ ScrollView>
             );
         }
     }

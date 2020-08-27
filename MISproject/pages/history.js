@@ -24,6 +24,7 @@ export default class history extends Component {
     state = {
         response: [],
         refreshing: false,
+        alreadyupload:false,
 
     }
     _onRefresh = () => {
@@ -122,7 +123,7 @@ export default class history extends Component {
         formData2.append('fileName', filename)
         //之後要抓使用者名稱
 
-        fetch(`http://140.115.81.199:9943/audioUpload/${username}`,
+        fetch(`http://140.115.81.199:9943/audioUpload`,
             {
                 method: 'POST',
                 headers: {
@@ -136,7 +137,7 @@ export default class history extends Component {
             })
             .then(result => {
                 console.log("success", result)
-                fetch(`http://140.115.81.199:9943/bucketUpload/${username}/${filename}`,
+                fetch(`http://140.115.81.199:9943/bucketUpload`,
                     {
                         method: 'POST',
                         headers: {
@@ -150,7 +151,7 @@ export default class history extends Component {
                     })
                     .then(result => {
                         console.log("success", result)
-                        fetch(`http://140.115.81.199:9943/textDown/${username}/${filename}`,
+                        fetch(`http://140.115.81.199:9943/textDown`,
                             {
                                 method: 'POST',
                                 headers: {
@@ -164,7 +165,7 @@ export default class history extends Component {
                             })
                             .then(result => {
                                 console.log("success", result)
-                                fetch(`http://140.115.81.199:9943/snowDown/${username}/${filename}`,
+                                fetch(`http://140.115.81.199:9943/snowDown`,
                                     {
                                         method: 'POST',
                                         headers: {
@@ -175,6 +176,25 @@ export default class history extends Component {
                                     })
                                     .then(response => {
                                         console.log(response.status);
+                                        if(response.status==500){
+                                            console.log("ewdfv");
+                                            Alert.alert(
+                                                "提醒",
+                                                "你的聲音太小聲，程式無法辨識，但仍可播放音檔",
+                                                [
+                                                   
+                                                    { text: "ok i understand", onPress: () => console.log("OK Pressed") },
+                                                    {
+                                                        text: "i want to delete it",
+                                                        onPress: () => this.deleteFile(l.path),
+                                                        style: "cancel"
+                                                    }
+                                                ],
+                                                { cancelable: false }
+                                            );
+                                            this.setState({ alreadyupload: true });
+                                            
+                                        }
                                     })
                                     .then(result => {
                                         console.log("success", result)
@@ -198,7 +218,7 @@ export default class history extends Component {
 
 
     render() {
-        let { response } = this.state;
+        let { response,alreadyupload } = this.state;
         const { navigation } = this.props;
 
         return (
@@ -242,7 +262,10 @@ export default class history extends Component {
                                         title={(l.name.replace("name-", "")).replace(".awb", "")}
                                         subtitle={l.subtitle}
                                         bottomDivider
-                                        rightIcon={{
+                                        rightIcon={
+                                            {
+                                                
+                                                
                                             name: 'cloud-upload-outline',
                                             type: 'ionicon',
                                             onPress: () => {
